@@ -14,6 +14,8 @@ const Combat = (function () {
   let raf = 0, last = 0, running = false, paused = false, inited = false;
   let C = null, cfg = null;
   const mouse = { x: 400, y: 280, down: false, pressed: false };
+  let aimId = null, lastPT = 'mouse', tb = null; // 터치 조준 중인 손가락 · 마지막 입력 종류 · 화면 버튼
+  const isTouch = () => { const st = document.getElementById('stage'); return !!(st && st.classList.contains('touch')); };
 
   const snd = (n, o) => { try { if (window.Sound) Sound.play(n, o); } catch (e) { /* noop */ } };
   const sgun = p => { try { if (window.Sound) Sound.gun(p); } catch (e) { /* noop */ } };
@@ -34,7 +36,44 @@ const Combat = (function () {
     cv.addEventListener('mousemove', pos);
     cv.addEventListener('mousedown', ev => { if (ev.button !== 0) return; pos(ev); mouse.down = true; mouse.pressed = true; ev.preventDefault(); });
     window.addEventListener('mouseup', () => { mouse.down = false; });
-    cv.addEventListener('contextmenu', ev => { ev.preventDefault(); pos(ev); if (running && !paused) throwGrenade(); });
+    cv.addEventListener('contextmenu', ev => { ev.preventDefault(); if (lastPT !== 'mouse') return; pos(ev); if (running && !paused) throwGrenade(); });
+    // 터치: 누르고 있는 동안 그 지점을 조준·사격. 손가락이 과녁을 가리지 않게 조준점을 살짝 위로 띄운다
+    // (화면 맨 아래 줄도 겨눌 수 있도록 바닥 쪽으로 갈수록 띄우는 양을 줄인다)
+    const tpos = ev => {
+      const r = cv.getBoundingClientRect(), k = H / r.height;
+      const x = (ev.clientX - r.left) / r.width * W, y = (ev.clientY - r.top) * k;
+      const off = ev.pointerType === 'touch' ? 34 * k * U.clamp((H - y) / (H - GROUND), 0, 1) : 0;
+      mouse.x = x; mouse.y = y - off;
+    };
+    cv.addEventListener('pointerdown', ev => {
+      lastPT = ev.pointerType;
+      if (ev.pointerType === 'mouse') return;
+      ev.preventDefault();
+      if (aimId !== null) return;
+      aimId = ev.pointerId;
+      try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* noop */ }
+      tpos(ev); mouse.down = true; mouse.pressed = true;
+    });
+    cv.addEventListener('pointermove', ev => { if (ev.pointerId === aimId) { ev.preventDefault(); tpos(ev); } });
+    const tup = ev => { if (ev.pointerId === aimId) { aimId = null; mouse.down = false; } };
+    cv.addEventListener('pointerup', tup); cv.addEventListener('pointercancel', tup);
+    // 터치용 화면 버튼 (왼손 엄지 자리). 터치 기기에서만 CSS 로 보인다
+    try {
+      tb = document.createElement('div'); tb.id = 'tbtns';
+      tb.innerHTML = '<button class="tb-pause" data-k="pause">⏸</button><button data-k="swap" style="top:284px">⇄<small>무기 교체</small></button><button data-k="reload" style="top:380px">⟳<small>재장전</small></button><button data-k="gren" style="top:476px">💣<small>수류탄</small></button>';
+      document.getElementById('stage').appendChild(tb);
+      tb.addEventListener('pointerdown', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        const b = ev.target.closest && ev.target.closest('button');
+        if (!b || !running) return;
+        const k = b.dataset.k;
+        if (k === 'pause') { setPaused(!paused); return; }
+        if (paused || !C) return;
+        if (k === 'swap') { if (C.swapT <= 0) swap(); } else if (k === 'reload') manualReload(); else if (k === 'gren') throwGrenade();
+      });
+      tb.addEventListener('contextmenu', ev => ev.preventDefault());
+      tb.btn = k => tb.querySelector(`[data-k="${k}"]`);
+    } catch (e) { tb = null; }
     cv.addEventListener('wheel', ev => { if (running && !paused && C && C.swapT <= 0) swap(); ev.preventDefault(); }, { passive: false });
     window.addEventListener('keydown', ev => {
       if (!running) return;
@@ -82,7 +121,7 @@ const Combat = (function () {
       spawnEnemy('dummy', { x: 300, y: 300 });
       spawnEnemy('dummy', { x: 420, y: 282 });
       const a = spawnEnemy('dummy', { x: 540, y: 325 }); a.armor = 0.6; a.label = '철갑';
-      banner('시험 사격장', 'ESC: 나가기 · 1/2: 무기 교체 · R: 재장전');
+      banner('시험 사격장', isTouch() ? '⏸: 나가기 · ⇄: 무기 교체 · ⟳: 재장전' : 'ESC: 나가기 · 1/2: 무기 교체 · R: 재장전');
     } else {
       const plan = Waves.plan(cfg.day, cfg.night, cfg.heat || 0);
       C.spawns = plan.list; C.total = plan.list.length;
@@ -91,11 +130,11 @@ const Combat = (function () {
       const nt = cfg.night;
       banner(nt.boss ? '⚠ 보스 접근 중 ⚠' : nt.blood ? '🩸 블러드문 🩸' : `${cfg.day}일차 밤`, nt.boss ? ENEMIES[nt.boss].name + ' — ' + ENEMIES[nt.boss].title : (THEMES[nt.theme] ? THEMES[nt.theme].name : ''));
       snd('wave_start');
-      if (cfg.day === 1) { C.timers.push({ t: 4.5, fn: () => banner('머리를 노려라!', '약점 명중은 2배 피해 · 꾹 누르면 연사 · R 재장전') }); }
+      if (cfg.day === 1) { C.timers.push({ t: 4.5, fn: () => banner('머리를 노려라!', '약점 명중은 2배 피해 · 꾹 누르면 연사 · ' + (isTouch() ? '⟳ 버튼 재장전' : 'R 재장전')) }); }
       else if (cfg.day === 2) C.timers.push({ t: 4.5, fn: () => banner('팁', '멀리 있는 적은 탄이 퍼진다 · 조준선이 좁아질 때 쏴라') });
     }
     try { if (window.Sound) Sound.music(cfg.mode === 'range' ? 'base' : cfg.night.boss ? 'boss' : 'combat'); } catch (e) { /* noop */ }
-    running = true; paused = false; last = performance.now(); bgT = -9;
+    running = true; paused = false; last = performance.now(); bgT = -9; aimId = null; mouse.down = false;
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(loop);
   }
@@ -1151,9 +1190,10 @@ const Combat = (function () {
       otext('시험 사격장', 24, 36, 24, '#ffd76a');
       otext(`최근 3초 DPS: ${Math.round(sum / 3)}`, 24, 68, 20, '#fff');
       otext(`명중 ${st.hits} / 발사 ${st.shots}`, 24, 96, 16, '#cfd6da');
-      otext('ESC 로 나가기', 1256, 36, 18, '#cfd6da', 'right');
+      otext(isTouch() ? '⏸ 로 나가기' : 'ESC 로 나가기', 1256, 36, 18, '#cfd6da', 'right');
       for (const e of C.enemies) if (e.label) otext(e.label, e.x * SC, (e.y - e.h - 8) * SC, 14, '#9aa39a', 'center');
     }
+    if (tb && tb.btn) { const sb = tb.btn('swap'), gb = tb.btn('gren'); if (sb) sb.classList.toggle('hidden', C.weapons.length < 2); if (gb) gb.classList.toggle('cd', C.grenT > 0); }
     // 무기 패널
     const bx = 24, by = 610;
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(bx - 8, by - 8, 380, 104);
@@ -1182,7 +1222,7 @@ const Combat = (function () {
       const gx = 416, gy = 628, ready = C.grenT <= 0;
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(gx, gy, 132, 44);
       otext('💣', gx + 8, gy + 23, 24, '#fff');
-      otext(ready ? '우클릭 / Space' : C.grenT.toFixed(1) + 's', gx + 44, gy + 15, 13, ready ? '#8fe36a' : '#9aa39a');
+      otext(ready ? (isTouch() ? '💣 버튼' : '우클릭 / Space') : C.grenT.toFixed(1) + 's', gx + 44, gy + 15, 13, ready ? '#8fe36a' : '#9aa39a');
       ctx.fillStyle = '#2a2a2a'; ctx.fillRect(gx + 44, gy + 28, 80, 6);
       ctx.fillStyle = ready ? '#8fe36a' : '#ffb347'; ctx.fillRect(gx + 44, gy + 28, 80 * (1 - Math.max(0, C.grenT) / GREN_CD), 6);
     }
@@ -1210,8 +1250,8 @@ const Combat = (function () {
       ctx.stroke();
     }
     ctx.shadowBlur = 0;
-    if (!reloading && !w.jam && !s.noReload && w.ammo / s.mag <= 0.25 && s.mag > 3) otext('탄 부족 [R]', mx, my + r + 26, 13, '#ff8a3c', 'center');
-    if (w.jam) otext('걸림! [R]', mx, my + r + 26, 15, '#ff5050', 'center');
+    if (!reloading && !w.jam && !s.noReload && w.ammo / s.mag <= 0.25 && s.mag > 3) otext(isTouch() ? '탄 부족 [⟳]' : '탄 부족 [R]', mx, my + r + 26, 13, '#ff8a3c', 'center');
+    if (w.jam) otext(isTouch() ? '걸림! [⟳]' : '걸림! [R]', mx, my + r + 26, 15, '#ff5050', 'center');
     if (reloading) { ctx.strokeStyle = '#7fe9ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(mx, my, r + 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - w.reload / s.reload)); ctx.stroke(); }
     if (paused) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, 1280, 720); }
   }

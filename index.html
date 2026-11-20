@@ -2,7 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
 <title>BUNKER 404: 건스미스</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b1711'/%3E%3Ctext x='50' y='68' font-size='44' font-family='Arial Black,sans-serif' font-weight='900' text-anchor='middle' fill='%23ffb347'%3E404%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +27,7 @@
       <div class="logo-kr">건 스 미 스</div>
       <p class="title-tag">고물을 주워 총을 만들고, 총으로 문을 지켜라.</p>
       <div class="title-btns" id="title-btns"></div>
-      <div class="title-foot">마우스: 조준·사격 &nbsp;|&nbsp; 우클릭·Space: 수류탄 &nbsp;|&nbsp; R: 재장전 &nbsp;|&nbsp; 1·2·Q: 무기 교체 &nbsp;|&nbsp; ESC: 일시정지</div>
+      <div class="title-foot"><span class="kb-only">마우스: 조준·사격 &nbsp;|&nbsp; 우클릭·Space: 수류탄 &nbsp;|&nbsp; R: 재장전 &nbsp;|&nbsp; 1·2·Q: 무기 교체 &nbsp;|&nbsp; ESC: 일시정지</span><span class="touch-only">누르고 있기: 조준·사격 &nbsp;|&nbsp; 왼쪽 버튼: 💣 수류탄 · ⟳ 재장전 · ⇄ 교체 · ⏸ 일시정지 &nbsp;|&nbsp; 길게 누르기: 설명 보기</span></div>
     </div>
   </section>
 
@@ -71,5 +75,6 @@
 <script src="js/glossary.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
+<div id="rotate"><div class="ic">📱↻</div><p>가로로 돌려 주세요</p><p class="sub">BUNKER 404 는 가로 화면에서 플레이합니다.</p></div>
 </body>
 </html>

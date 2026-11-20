@@ -5,6 +5,7 @@ const UI = (function () {
   const st = { roleF: 'all', tab: 'bench', gi: 0, slot: 'receiver', filter: 'all', invSel: null, invTab: 'parts', calSel: null, calMonth: null, diff: 'normal', shopSeen: 0 };
   const el = id => document.getElementById(id);
   const esc = U.esc;
+  let lastPT = 'mouse';
   let stage, curModal = null, bgTimer = 0, bgMode = 'title', pvRaf = 0, pvFlash = 0, pvT0 = performance.now();
   const snd = (n, o) => { try { if (window.Sound) Sound.play(n, o); } catch (e) { /* noop */ } };
   const music = m => { try { if (window.Sound) Sound.music(m); } catch (e) { /* noop */ } };
@@ -101,14 +102,14 @@ const UI = (function () {
       <div class="diff-pick">${Object.keys(DIFFS).map(k => `<button class="btn ${k === st.diff ? 'sel' : ''}" data-act="diff" data-d="${k}">${DIFFS[k].name}</button>`).join('')}</div>
       <div class="diff-desc">${DIFFS[st.diff].desc}</div>
       <button class="btn ${has ? '' : 'primary'} big" data-act="newgame">새 게임</button>
-      <div class="row"><button class="btn small" data-act="settings">🔊 소리 설정</button><button class="btn small" data-act="howto">❔ 게임 방법</button></div>`;
+      <div class="row"><button class="btn small" data-act="settings">🔊 소리 설정</button><button class="btn small" data-act="howto">❔ 게임 방법</button></div>${fsBtn()}`;
   }
   const HOWTO = `<h1>게임 방법</h1>
     <p>당신은 <b>404 대피소</b>의 하나뿐인 총포상. 정부 기록에 이 대피소는 "찾을 수 없음(404)"이라 구조대는 오지 않는다.</p>
     <h3>☀️ 낮 — 준비</h3>
     <p>🔧 <b>작업대</b>에서 파츠를 조합해 총을 만든다. 같은 계열 3개 이상이면 <b>세트 효과</b>.<br>🗺️ <b>원정</b>(활동력 소모)으로 재료와 파츠를 줍고, 🛒 <b>상인</b>이 오는 날엔 거래한다.<br>📦 한 번 얻은 파츠는 도면이 등록되어 <b>제작·강화·분해</b>할 수 있다.<br>💊 <b>특수 탄약</b>은 쏠 때마다 화약🧨을 쓴다. 한 발이 강하고 비싼 탄은 보스·정예에게, 싸고 넓게 퍼지는 탄은 잡몹 떼에게. 조합은 <b>프리셋</b>으로 저장해 두고 그날 적에 맞춰 바꿔 끼우자.<br>📅 <b>달력</b>에서 다가올 습격과 상인 방문을 보고 미리 계획하라.</p>
     <h3>🌙 밤 — 방어</h3>
-    <p>마우스로 조준하고 눌러서 쏜다. <b>머리</b>를 맞히면 큰 피해. <b>우클릭/Space</b> 수류탄, <b>R</b> 재장전, <b>1·2·Q</b> 무기 교체, <b>ESC</b> 일시정지.<br>문이 뚫리면 목숨(❤)을 하나 잃고 자원의 25%를 털린다. 목숨이 다하면 끝.</p>
+    <p>마우스로 조준하고 눌러서 쏜다. <b>머리</b>를 맞히면 큰 피해. <b>우클릭/Space</b> 수류탄, <b>R</b> 재장전, <b>1·2·Q</b> 무기 교체, <b>ESC</b> 일시정지.<br>📱 터치: 누르고 있는 동안 그 지점을 조준·사격(조준점이 손가락 살짝 위에 뜬다). 왼쪽 버튼으로 💣 수류탄 · ⟳ 재장전 · ⇄ 교체 · ⏸ 일시정지. 설명은 길게 눌러 본다.<br>문이 뚫리면 목숨(❤)을 하나 잃고 자원의 25%를 털린다. 목숨이 다하면 끝.</p>
     <h3>🎯 목표</h3><p>30일을 버티고 재개발 조합장을 막아내라. 10일·20일·30일에는 보스가 온다.</p>`;
 
   /* ───────── 기지 화면 ───────── */
@@ -610,14 +611,29 @@ const UI = (function () {
     return ['master', 'sfx', 'music'].map(k => `<div class="vol"><span style="width:80px">${{ master: '전체', sfx: '효과음', music: '음악' }[k]}</span><input type="range" min="0" max="100" value="${v(k)}" data-vol="${k}"></div>`).join('');
   }
   function settings() {
-    modal(`<h1>⚙️ 설정</h1>${volHTML()}<div class="foot"><button class="btn danger small" data-act="wipe">저장 데이터 삭제</button><button class="btn primary" data-act="ok">닫기</button></div>`, {
-      ok: closeModal,
+    modal(`<h1>⚙️ 설정</h1>${volHTML()}<div class="foot"><button class="btn danger small" data-act="wipe">저장 데이터 삭제</button>${fsBtn()}<button class="btn primary" data-act="ok">닫기</button></div>`, {
+      ok: closeModal, fullscreen: toggleFS,
       wipe() { modal(`<h1>정말 삭제할까요?</h1><p>모든 진행 상황이 사라집니다. 이장님도 사라집니다.</p><div class="foot"><button class="btn" data-act="no">취소</button><button class="btn danger" data-act="yes">삭제</button></div>`, { no: closeModal, yes() { Game.wipe(); Game.s = null; closeModal(); showTitle(); } }); },
     });
   }
 
+  // 전체화면 (지원하는 브라우저에서만 버튼이 보인다. 아이폰 사파리는 미지원 → 홈 화면에 추가하면 전체화면)
+  const fsRoot = document.documentElement;
+  const fsOK = () => !!(fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen);
+  function toggleFS() {
+    const d = document;
+    try {
+      if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+      const p = (fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen).call(fsRoot);
+      const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* noop */ } };
+      if (p && p.then) p.then(lock).catch(() => {}); else lock();
+    } catch (e) { /* noop */ }
+  }
+  const fsBtn = cls => fsOK() ? `<button class="btn small ${cls || ''}" data-act="fullscreen">⛶ 전체화면</button>` : '';
+
   /* ───────── 액션 ───────── */
   const ACT = {
+    fullscreen: toggleFS,
     diff(d) { st.diff = d.d; showTitle(); },
     newgame() {
       const go = () => { closeModal(); Game.newGame(st.diff); st.tab = 'bench'; st.gi = 0; st.slot = 'barrel'; st.calSel = null; st.calMonth = null; showBase(); };
@@ -748,9 +764,13 @@ const UI = (function () {
     stage.style.transform = `scale(${k})`;
     stage.style.left = Math.round((window.innerWidth - 1280 * k) / 2) + 'px';
     stage.style.top = Math.round((window.innerHeight - 720 * k) / 2) + 'px';
+    // 터치 기기를 세로로 들면 '가로로 돌려 주세요' 안내가 덮으므로 전투는 멈춰 둔다
+    try { if (window.innerHeight > window.innerWidth && matchMedia('(hover: none) and (pointer: coarse)').matches && Combat.isRunning() && !Combat.isPaused()) Combat.setPaused(true); } catch (e) { /* noop */ }
   }
   function init() {
     stage = el('stage');
+    try { if (matchMedia('(hover: none) and (pointer: coarse)').matches) { stage.classList.add('touch'); lastPT = 'touch'; } } catch (e) { /* noop */ }
+    document.addEventListener('gesturestart', ev => ev.preventDefault()); // iOS 핀치 확대 막기
     fit(); window.addEventListener('resize', fit);
     document.addEventListener('pointerdown', () => { try { if (window.Sound) Sound.init(); } catch (e) { /* noop */ } });
     document.addEventListener('click', ev => {
@@ -758,6 +778,14 @@ const UI = (function () {
       if (!t || t.disabled) return;
       const act = t.dataset.act;
       if (curModal) { if (curModal.acts[act]) { snd('ui_click'); curModal.acts[act](t.dataset, t); } return; }
+      if (act === 'equip' && lastPT === 'touch' && t.dataset.cmp && st.tab === 'bench') { // 터치: 첫 탭은 비교만
+        const box = el('statbox');
+        if (box && box.dataset.cmp !== t.dataset.uid) {
+          box.dataset.cmp = t.dataset.uid; box.innerHTML = statsHTML(Game.gunStats(st.gi), cmpStats(+t.dataset.uid));
+          document.querySelectorAll('.pc.cmping').forEach(x => x.classList.remove('cmping')); t.classList.add('cmping');
+          snd('ui_click'); return;
+        }
+      }
       if (ACT[act]) { if (!['equip', 'dryfire', 'gacha', 'buy', 'sell', 'craft', 'enhance', 'dismantle', 'pet', 'tab'].includes(act)) snd('ui_click'); ACT[act](t.dataset, t); }
     });
     document.addEventListener('input', ev => { const k = ev.target.dataset && ev.target.dataset.vol; if (k) { try { Sound.setVolume(k, ev.target.value / 100); } catch (e) { /* noop */ } } });
@@ -773,25 +801,45 @@ const UI = (function () {
     const tipHide = () => { tipEl = null; tip.classList.add('hidden'); };
     const tipMove = ev => {
       const r = stage.getBoundingClientRect(), k = r.width / 1280;
-      let x = (ev.clientX - r.left) / k + 14, y = (ev.clientY - r.top) / k + 18;
       const w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = (ev.clientX - r.left) / k + 14, y = (ev.clientY - r.top) / k + 18;
+      if (ev.above) { x = (ev.clientX - r.left) / k - w / 2; y = (ev.clientY - r.top) / k - h - 56; if (y < 8) y = (ev.clientY - r.top) / k + 56; }
+      x = Math.max(8, x);
       if (x + w > 1272) x = Math.max(8, x - w - 24);
       if (y + h > 712) y = Math.max(8, y - h - 30);
       tip.style.left = Math.round(x) + 'px'; tip.style.top = Math.round(y) + 'px';
     };
-    document.addEventListener('mouseover', ev => {
+    const tipOf = t => { if (t.hasAttribute('title')) { const v = t.getAttribute('title'); t.removeAttribute('title'); if (v) t.dataset.tip = v; } return t.dataset.tip; };
+    const tipShow = (t, ev) => { tipEl = t; tip.textContent = t.dataset.tip; tip.classList.remove('hidden'); tipMove(ev); };
+    document.addEventListener('pointerover', ev => {
+      if (ev.pointerType !== 'mouse') return;
       const t = ev.target.closest && ev.target.closest('[title],[data-tip]');
-      if (t && t.hasAttribute('title')) { const v = t.getAttribute('title'); t.removeAttribute('title'); if (v) t.dataset.tip = v; }
-      if (!t || !t.dataset.tip || stage.classList.contains('combat')) { tipHide(); return; }
-      if (t === tipEl) return;
-      tipEl = t; tip.textContent = t.dataset.tip; tip.classList.remove('hidden'); tipMove(ev);
+      if (!t || !tipOf(t) || stage.classList.contains('combat')) { tipHide(); return; }
+      if (t !== tipEl) tipShow(t, ev);
     });
-    document.addEventListener('mousemove', ev => { if (!tipEl) return; if (!tipEl.isConnected) { tipHide(); return; } tipMove(ev); });
-    document.addEventListener('mousedown', tipHide);
-    document.addEventListener('mouseleave', tipHide);
+    document.addEventListener('pointermove', ev => { if (ev.pointerType !== 'mouse' || !tipEl) return; if (!tipEl.isConnected) { tipHide(); return; } tipMove(ev); });
+    // 터치: 길게 누르면 설명이 뜨고, 그때 손을 떼도 클릭으로 치지 않는다
+    let lpT = 0, lpX = 0, lpY = 0, eatClick = false;
+    document.addEventListener('pointerdown', ev => {
+      tipHide(); clearTimeout(lpT); eatClick = false;
+      lastPT = ev.pointerType;
+      stage.classList.toggle('touch', ev.pointerType === 'touch');
+      if (ev.pointerType !== 'touch' || stage.classList.contains('combat')) return;
+      const t = ev.target.closest && ev.target.closest('[title],[data-tip]');
+      if (!t || !tipOf(t)) return;
+      lpX = ev.clientX; lpY = ev.clientY;
+      lpT = setTimeout(() => { if (!t.isConnected) return; tipShow(t, { clientX: lpX, clientY: lpY, above: true }); eatClick = true; }, 420);
+    }, true);
+    document.addEventListener('pointermove', ev => { if (ev.pointerType === 'touch' && lpT && Math.hypot(ev.clientX - lpX, ev.clientY - lpY) > 12) clearTimeout(lpT); }, true);
+    document.addEventListener('pointercancel', () => clearTimeout(lpT), true);
+    document.addEventListener('pointerup', () => clearTimeout(lpT), true);
+    document.addEventListener('click', ev => { if (eatClick) { eatClick = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
+    document.addEventListener('contextmenu', ev => { if (lastPT === 'touch') ev.preventDefault(); });
+    document.documentElement.addEventListener('mouseleave', tipHide);
     window.addEventListener('blur', tipHide);
     // 작업대 후보 호버 → 스탯 비교
-    el('main').addEventListener('mouseover', ev => {
+    el('main').addEventListener('pointerover', ev => {
+      if (ev.pointerType === 'touch') return;
       const c = ev.target.closest('[data-cmp]');
       const box = el('statbox');
       if (!box || st.tab !== 'bench') return;
