@@ -3,6 +3,7 @@
 
 const Combat = (function () {
   const W = 640, H = 360, SC = 2;
+  const KB_SCALE = 0.5; // 넉백 이동 거리 배율
   const GROUND = 250, LANE_MIN = 268, LANE_MAX = 338, GATE_X = 124;
   const PX = 86, PY = 196, PIVX = 92, PIVY = 178, GS = 0.5;
   const TUR = [{ x: 46, y: 196 }, { x: 18, y: 196 }];
@@ -248,13 +249,13 @@ const Combat = (function () {
     const ground = o.ty > GROUND + 4;
     const sid = o.turret ? 0 : ++C.sid; // 명중률 집계용: 한 번의 격발 = 한 발
     const base = { dmgMul, crit: forced, turret: o.turret, power, sid };
-    if (s.proj === 'beam') fireBeam(w, mz, o.ang, base, ground ? tdist + 8 : 900);
+    if (s.proj === 'beam') fireBeam(w, mz, o.ang, base, 900);
     else if (s.proj === 'rail') fireRail(w, mz, o.ang + (Math.random() - 0.5) * sprd, base);
     else if (s.proj === 'arc') fireArc(w, mz, o.ang + (Math.random() - 0.5) * sprd, base, tdist);
     else for (let i = 0; i < s.pellets; i++) {
       const a = o.ang + (Math.random() + Math.random() - 1) * sprd;
       const vel = s.vel * U.rand(0.94, 1.06);
-      const p = { w, kind: s.proj, x: mz.x, y: mz.y, px: mz.x, py: mz.y, vx: Math.cos(a) * vel, vy: Math.sin(a) * vel, dmg: s.dmg * dmgMul, pierce: s.pierce + (s.mode === 'charge' && power >= 1 ? 1 : 0), bounce: Math.round(s.fx.bounce || 0), life: 2.6, dist: 0, maxDist: ground ? tdist + 10 + U.rand(-4, 6) : 0, crit: forced, turret: o.turret, hit: null, age: 0, rot: 0, sid };
+      const p = { w, kind: s.proj, x: mz.x, y: mz.y, px: mz.x, py: mz.y, vx: Math.cos(a) * vel, vy: Math.sin(a) * vel, dmg: s.dmg * dmgMul, pierce: s.pierce + (s.mode === 'charge' && power >= 1 ? 1 : 0), bounce: Math.round(s.fx.bounce || 0), life: 2.6, dist: 0, maxDist: ground && s.proj === 'saw' ? tdist + 10 + U.rand(-4, 6) : 0, crit: forced, turret: o.turret, hit: null, age: 0, rot: 0, sid };
       if (s.proj === 'lob' || s.proj === 'orb') {
         const off = sprd * tdist;
         p.sx = mz.x; p.sy = mz.y;
@@ -620,8 +621,8 @@ const Combat = (function () {
     if (e.chill > 0) e.chill = Math.max(0, e.chill - dt * 0.12);
     if (e.stun > 0) { e.stun -= dt; return; }
     if (def.dummy) { e.kb = 0; e.stagger = 0; return; }
-    if (e.stagger > 0) { e.stagger -= dt; if (e.kb > 0.5) { e.x += e.kb * dt * 7; e.kb *= Math.max(0, 1 - dt * 7); } return; }
-    if (e.kb > 0.5) { e.x += e.kb * dt * 7; e.kb *= Math.max(0, 1 - dt * 7); }
+    if (e.stagger > 0) { e.stagger -= dt; if (e.kb > 0.5) { e.x += e.kb * KB_SCALE * dt * 7; e.kb *= Math.max(0, 1 - dt * 7); } return; }
+    if (e.kb > 0.5) { e.x += e.kb * KB_SCALE * dt * 7; e.kb *= Math.max(0, 1 - dt * 7); }
     if (def.dummy) return;
     let v = e.spd * (1 - 0.6 * Math.min(1, e.chill || 0));
     if (e.enrage) v *= 1.35;
@@ -827,6 +828,7 @@ const Combat = (function () {
       return;
     }
     p.x = nx; p.y = ny; p.dist += step; p.rot += dt * 12;
+    if (!ended && p.vy > 0 && p.y > LANE_MAX + 14) ended = true; // 조준선 너머로 날아가다 화면 아래 땅에 박힘
     if (ended) {
       if (p.kind === 'saw') { p.phase = 1; p.vx = Math.max(160, Math.abs(s.vel) * 0.7); p.vy = 0; p.hit = new Set(); p.y = Math.max(p.y, LANE_MIN - 4); p.age = 0; return; }
       p.dead = true;

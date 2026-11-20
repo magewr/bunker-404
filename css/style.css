@@ -89,7 +89,7 @@ button { font-family: var(--f-head); color: var(--ink); cursor: pointer; }
 .panel h2 { font-family: var(--f-head); font-weight: 400; font-size: 20px; margin: 0 0 8px; color: var(--amber); display: flex; align-items: center; gap: 8px; }
 .panel h2 small { font-size: 13px; color: var(--dim); }
 .sub { color: var(--dim); font-size: 13px; }
-.scroll { overflow-y: auto; }
+.scroll { overflow-y: auto; min-height: 0; }
 .row { display: flex; gap: 10px; }
 .grow { flex: 1; min-width: 0; }
 .hazard { height: 6px; background: repeating-linear-gradient(-45deg, #e8b730 0 8px, #1b1711 8px 16px); border-radius: 2px; opacity: .7; }
@@ -121,7 +121,8 @@ button { font-family: var(--f-head); color: var(--ink); cursor: pointer; }
 .cost .no { color: var(--red); }
 
 /* ── 작업대 ── */
-.bench { display: grid; grid-template-columns: 262px 420px 1fr; gap: 10px; height: 100%; }
+.bench { display: grid; grid-template-columns: 262px 420px 1fr; grid-template-rows: minmax(0, 1fr); gap: 10px; height: 100%; }
+.bench > .panel { min-height: 0; }
 .gunsel { display: flex; gap: 4px; margin-bottom: 8px; }
 .gunsel .btn { flex: 1; padding: 5px 2px; font-size: 14px; }
 .gunsel .btn.sel { border-color: var(--amber); color: var(--amber); background: linear-gradient(#5a3d14, #3a2a14); }
@@ -189,8 +190,8 @@ button { font-family: var(--f-head); color: var(--ink); cursor: pointer; }
 .loc .em { font-size: 42px; width: 56px; text-align: center; }
 .loc .ln { font-family: var(--f-head); font-size: 19px; }
 .loc.lock { opacity: .45; }
-.danger { display: inline-block; width: 60px; height: 7px; background: #000; border-radius: 3px; overflow: hidden; vertical-align: middle; }
-.danger i { display: block; height: 100%; background: linear-gradient(90deg, #8fe36a, #ffd23c, #ff5a5a); }
+.dmeter { display: inline-block; width: 60px; height: 7px; background: #000; border-radius: 3px; overflow: hidden; vertical-align: middle; }
+.dmeter i { display: block; height: 100%; background: linear-gradient(90deg, #8fe36a, #ffd23c, #ff5a5a); }
 .upg { display: flex; gap: 10px; align-items: center; background: #221d16; border: 2px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .upg .em { font-size: 32px; width: 44px; text-align: center; }
 .upg .un { font-family: var(--f-head); font-size: 17px; }
@@ -276,3 +277,6 @@ button { font-family: var(--f-head); color: var(--ink); cursor: pointer; }
 .gi { background: rgba(0, 0, 0, .3); border-left: 3px solid var(--amber); padding: 4px 9px; border-radius: 0 6px 6px 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
 .gi b { display: block; color: var(--amber); font-family: var(--f-head); font-weight: 400; font-size: 15px; }
 .modal .filters .btn.sel { border-color: var(--amber); color: var(--amber); }
+
+/* ── 호버 말풍선 ── */
+#tip { position: absolute; z-index: 95; max-width: 340px; pointer-events: none; background: linear-gradient(#2c251b, #1c1711); border: 2px solid var(--line2); border-radius: 6px; padding: 6px 10px; font-size: 13.5px; line-height: 1.45; color: var(--ink); white-space: pre-line; box-shadow: 0 6px 18px rgba(0, 0, 0, .7); }

@@ -373,7 +373,7 @@ const UI = (function () {
       const loot = Object.keys(loc.loot).map(k => `${RES[k].icon}${loc.loot[k][0]}~${loc.loot[k][1]}`).join(' ');
       h += `<div class="loc ${lock ? 'lock' : ''}"><div class="em">${lock ? '🔒' : loc.emoji}</div><div class="grow"><div class="ln">${loc.name} <span class="sub">${'⚡'.repeat(loc.ap)}</span></div>
         <div class="sub">${lock ? `${loc.unlock}일차에 길이 열립니다.` : esc(loc.desc)}</div>
-        ${lock ? '' : `<div class="sub" style="margin-top:3px">${loot} · 파츠 ${Math.round(loc.partChance * 100)}% (${loc.tags.map(t => TAGS[t].icon).join('')}) · 위험 <span class="danger"><i style="width:${loc.danger * 250}%"></i></span></div>`}</div>
+        ${lock ? '' : `<div class="sub" style="margin-top:3px">${loot} · 파츠 ${Math.round(loc.partChance * 100)}% (${loc.tags.map(t => TAGS[t].icon).join('')}) · 위험 <span class="dmeter"><i style="width:${loc.danger * 250}%"></i></span></div>`}</div>
         <button class="btn primary" data-act="scav" data-id="${loc.id}" ${lock || rain || s.ap < loc.ap ? 'disabled' : ''}>출발</button></div>`;
     }
     return h + '</div></div>';
@@ -767,6 +767,29 @@ const UI = (function () {
       if (curModal && curModal.acts.ok && performance.now() - (curModal.t || 0) > 400 && !el('overlay').classList.contains('hidden')) { ev.preventDefault(); snd('ui_click'); curModal.acts.ok({}); }
     });
     window.addEventListener('beforeunload', () => { if (Game.s && !Game.s.over && !stage.classList.contains('combat')) Game.save(); });
+    // 호버 설명: 브라우저 기본 title 말풍선(느림) 대신 게임 안 말풍선을 즉시 띄운다
+    const tip = document.createElement('div'); tip.id = 'tip'; tip.className = 'hidden'; stage.appendChild(tip);
+    let tipEl = null;
+    const tipHide = () => { tipEl = null; tip.classList.add('hidden'); };
+    const tipMove = ev => {
+      const r = stage.getBoundingClientRect(), k = r.width / 1280;
+      let x = (ev.clientX - r.left) / k + 14, y = (ev.clientY - r.top) / k + 18;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      if (x + w > 1272) x = Math.max(8, x - w - 24);
+      if (y + h > 712) y = Math.max(8, y - h - 30);
+      tip.style.left = Math.round(x) + 'px'; tip.style.top = Math.round(y) + 'px';
+    };
+    document.addEventListener('mouseover', ev => {
+      const t = ev.target.closest && ev.target.closest('[title],[data-tip]');
+      if (t && t.hasAttribute('title')) { const v = t.getAttribute('title'); t.removeAttribute('title'); if (v) t.dataset.tip = v; }
+      if (!t || !t.dataset.tip || stage.classList.contains('combat')) { tipHide(); return; }
+      if (t === tipEl) return;
+      tipEl = t; tip.textContent = t.dataset.tip; tip.classList.remove('hidden'); tipMove(ev);
+    });
+    document.addEventListener('mousemove', ev => { if (!tipEl) return; if (!tipEl.isConnected) { tipHide(); return; } tipMove(ev); });
+    document.addEventListener('mousedown', tipHide);
+    document.addEventListener('mouseleave', tipHide);
+    window.addEventListener('blur', tipHide);
     // 작업대 후보 호버 → 스탯 비교
     el('main').addEventListener('mouseover', ev => {
       const c = ev.target.closest('[data-cmp]');
