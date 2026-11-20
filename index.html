@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BUNKER 404: 건스미스</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b1711'/%3E%3Ctext x='50' y='68' font-size='44' font-family='Arial Black,sans-serif' font-weight='900' text-anchor='middle' fill='%23ffb347'%3E404%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg-canvas" width="640" height="360"></canvas>
+  <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+  <!-- 타이틀 -->
+  <section id="screen-title" class="screen">
+    <div class="title-box">
+      <div class="title-sub">대피소 번호를 찾을 수 없습니다</div>
+      <h1 class="logo"><span class="l1">BUNKER</span> <span class="l2">404</span></h1>
+      <div class="logo-kr">건 스 미 스</div>
+      <p class="title-tag">고물을 주워 총을 만들고, 총으로 문을 지켜라.</p>
+      <div class="title-btns" id="title-btns"></div>
+      <div class="title-foot">마우스: 조준·사격 &nbsp;|&nbsp; 우클릭·Space: 수류탄 &nbsp;|&nbsp; R: 재장전 &nbsp;|&nbsp; 1·2·Q: 무기 교체 &nbsp;|&nbsp; ESC: 일시정지</div>
+    </div>
+  </section>
+
+  <!-- 기지 (낮) -->
+  <section id="screen-base" class="screen hidden">
+    <header id="topbar"></header>
+    <nav id="nav"></nav>
+    <main id="main"></main>
+    <aside id="night"></aside>
+  </section>
+
+  <div id="pause" class="hidden"></div>
+  <div id="overlay" class="hidden"></div>
+  <div id="toasts"></div>
+  <div id="scan"></div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/data_parts.js"></script>
+<script src="js/data_parts_b.js"></script>
+<script src="js/data_parts_c.js"></script>
+<script src="js/data_parts_d.js"></script>
+<script src="js/data_parts_e.js"></script>
+<script src="js/data_parts_f.js"></script>
+<script src="js/data_parts_g.js"></script>
+<script src="js/data_parts_h.js"></script>
+<script src="js/data_enemies.js"></script>
+<script src="js/data_world.js"></script>
+<script src="js/data_world2.js"></script>
+<script src="js/gun.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/gunart_lite.js"></script>
+<script src="js/gunart.js"></script>
+<script src="js/gunart_ext_b.js"></script>
+<script src="js/gunart_ext_c.js"></script>
+<script src="js/gunart_ext_d.js"></script>
+<script src="js/gunart_ext_e.js"></script>
+<script src="js/gunart_ext_f.js"></script>
+<script src="js/gunart_ext_g.js"></script>
+<script src="js/gunart_ext_h.js"></script>
+<script src="js/projart.js"></script>
+<script src="js/game.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/glossary.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
